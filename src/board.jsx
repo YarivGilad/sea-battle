@@ -46,10 +46,8 @@ function position(ship) {
   let dist, origin, clear, count;
   switch (dir) {
     case "up":
-      //check how many cells exist till the edge in the chosen direction
-      dist = p.y - ship.size;
-      //if not enough cells exist set the origin point to the size of the ship
-      origin = dist < 0 ? ship.size : p.y;
+      dist = p.y - ship.size; //num of cells till the edge in the chosen direction
+      origin = dist < 0 ? ship.size : p.y; //if not enough cells exist set the origin point to the size of the ship
       //loop ship-size times to the direction
       //check if all the cells are clear
       clear = true;
@@ -163,12 +161,18 @@ const Board = () => {
 };
 export default Board;
 
-const Container = styled.div`
-  width: ${({ size }) => 4 * size}rem;
-  height: ${({ size }) => 4 * size}rem;
+const Container = styled.div.attrs(({ size }) => ({
+  style: {
+    "--size": size,
+    "--width": size * 4,
+    "--height": size * 4
+  }
+}))`
+  width: var(--width) rem;
+  height: var(--height) rem;
   /* border: deeppink 1px solid; */
   display: grid;
-  grid-template-columns: repeat(${({ size }) => size}, 1fr);
+  grid-template-columns: repeat(var(--size), 1fr);
 `;
 const Cell = styled.div`
   width: 3.5rem;
