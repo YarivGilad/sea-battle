@@ -17,7 +17,7 @@ const ships = [
   { size: "1", count: 4 }
 ];
 const cells = ["", ...letters];
-const random = (max, min = 0) => min + Math.floor(Math.random() * (max - min));
+const random = (max, min = 0) => min + Math.round(Math.random() * (max - min));
 const grid = [];
 let count = grid_size;
 while (count--) {
@@ -37,99 +37,98 @@ while (count--) {
 // ];
 
 //4 directions
-const directions = ["up", "down", "left", "right"];
+// const directions = ["up", "down", "left", "right"];
+const positions = ["horizontal", "vertical"];
 function position(ship) {
   //random point
   const p = { x: random(grid_size - 1), y: random(grid_size - 1) };
   //pick random direction
-  const dir = directions[random(directions.length - 1)];
-  let dist, origin, clear, count;
-  switch (dir) {
-    case "up":
-      dist = p.y - ship.size; //num of cells till the edge in the chosen direction
-      origin = dist < 0 ? ship.size : p.y; //if not enough cells exist set the origin point to the size of the ship
-      //loop ship-size times to the direction
-      //check if all the cells are clear
-      clear = true;
+  // const dir = directions[random(directions.length - 1)];
+  const pos = positions[random(positions.length - 1)];
+  const top_edge = 0;
+  const bottom_edge = grid_size - 1;
+  const right_edge = grid_size - 1;
+  const left_edge = 0;
+  const left = p.x > left_edge ? p.x - 1 : left_edge;
+  const right = p.x < right_edge ? p.x + 1 : right_edge;
+  const above = p.y - 1 < top_edge ? top_edge : p.y - 1;
+  const below = p.y + 1 > bottom_edge ? bottom_edge : p.y + 1;
+  let dist;
+  let origin;
+  let clear = true;
+  let count = ship.size;
+  const setup = (axis) => {
+    dist = p[axis] - ship.size; //num of cells till the top edge
+    origin = dist < 0 ? ship.size : p[axis]; //if not enough cells exist set the origin point to the size of the ship
+  };
+  const conclude = (axis) => {
+    if (clear) {
+      //if the cells are clear -> draw the ship
       count = ship.size;
       while (count--) {
-        if (grid[origin - count][p.x] !== 0) clear = false;
+        const txt = "x" + ship.size;
+        axis === "y"
+          ? (grid[origin - count][p.x] = txt)
+          : (grid[p.y][origin - count] = txt);
       }
-      //if they are -> occupy the cells and move to the next ship
-      if (clear) {
-        count = ship.size;
-        while (count--) {
-          grid[origin - count][p.x] = "x" + ship.size;
-        }
-      } else {
-        //if not -> choose another point and start over
-        position(ship);
-      }
-      break;
-    case "down":
-      //check how many cells exist till the edge in the chosen direction
-      dist = p.y + ship.size;
-      //if not enough cells exist set the origin point to the size of the ship
-      origin = dist > grid_size - 1 ? grid_size - 1 : dist;
-      //loop ship-size times to the direction
-      //check if all the cells are clear
-      clear = true;
-      count = ship.size;
-      while (count--) {
-        if (grid[origin - count][p.x] !== 0) clear = false;
-      }
-      //if they are -> occupy the cells and move to the next ship
-      if (clear) {
-        count = ship.size;
-        while (count--) {
-          grid[origin - count][p.x] = "x" + ship.size;
-        }
-      } else {
-        //if not -> choose another point and start over
-        position(ship);
-      }
-      break;
-    case "left":
-      dist = p.x - ship.size;
-      origin = dist < 0 ? ship.size - 1 : p.x;
-      clear = true;
-      count = ship.size;
-      while (count--) {
-        if (grid[p.y][origin - count] !== 0) clear = false;
-      }
-      if (clear) {
-        count = ship.size;
-        while (count--) {
-          grid[p.y][origin - count] = "x" + ship.size;
-        }
-      } else {
-        position(ship);
-      }
-      break;
-    case "right":
-      dist = p.y + ship.size;
-      origin = dist > grid_size - 1 ? grid_size - 1 : dist;
-      clear = true;
-      count = ship.size;
-      while (count--) {
-        if (grid[origin - count][p.x] !== 0) clear = false;
-      }
-      if (clear) {
-        count = ship.size;
-        while (count--) {
-          grid[origin - count][p.x] = "x" + ship.size;
-        }
-      } else {
-        position(ship);
-      }
-      break;
-    default:
-      console.log(dir);
+    } else {
+      //if not -> choose another point and start over
+      return position(ship);
+    }
+  };
+  if (pos === "vertical") {
+    setup("y");
+    while (count--) {
+      const y = origin - count;
+      //check the cells are clear
+      let line = grid[y];
+      let before = grid[y - 1];
+      let after = grid[y + 1];
+      if (
+        line[left] ||
+        line[p.x] ||
+        line[right] ||
+        (y > top_edge && (before[left] || before[p.x] || before[right])) ||
+        (y < bottom_edge && (after[left] || after[p.x] || after[right]))
+      )
+        clear = false;
+    }
+    conclude("y");
+  } else if (pos === "horizontal") {
+    setup("x");
+    while (count--) {
+      const x = origin - count;
+      //check the cells are clear
+      if (
+        grid[above][x] ||
+        grid[p.y][x] ||
+        grid[below][x] ||
+        (x < right_edge &&
+          (grid[above][x + 1] || grid[p.y][x + 1] || grid[below][x + 1])) ||
+        (x > left_edge &&
+          (grid[above][x - 1] || grid[p.y][x - 1] || grid[below][x - 1]))
+      )
+        clear = false;
+      //#region
+      // if (grid[above][x] !== 0) clear = false;
+      // if (grid[p.y][x] !== 0) clear = false;
+      // if (grid[below][x] !== 0) clear = false;
+      // if (x < right_edge) {
+      //   if (grid[above][x + 1] !== 0) clear = false;
+      //   if (grid[p.y][x + 1] !== 0) clear = false;
+      //   if (grid[below][x + 1] !== 0) clear = false;
+      // }
+      // if (x > left_edge) {
+      //   if (grid[above][x - 1] !== 0) clear = false;
+      //   if (grid[p.y][x - 1] !== 0) clear = false;
+      //   if (grid[below][x - 1] !== 0) clear = false;
+      // }
+      //#endregion
+    }
+    conclude("x");
   }
 }
 for (const ship of ships) {
-  // ship.count++;
-  console.log(ship);
   for (let i = 0; i < ship.count; i++) {
     position(ship);
   }
