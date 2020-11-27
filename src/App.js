@@ -20,5 +20,6 @@ const Container = styled.div`
   text-align: center;
   h1 {
     padding-bottom: 2rem;
+    color: whitesmoke;
   }
 `;

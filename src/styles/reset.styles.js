@@ -21,6 +21,11 @@ const ResetStyles = createGlobalStyle`
         #f5f5dc 0%,
         #d2b48c 100%
       );  */
+      background: linear-gradient(
+        170deg, 
+        #123 40%,
+        black 100% 
+      );
     }
     * {
       margin: 0;

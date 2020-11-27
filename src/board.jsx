@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+// import { lighten, darken } from "polished";
 
 const grid_size = 10;
 // Array.from({ length: grid_size }, (_, i) => i + 1);
@@ -16,7 +17,7 @@ const ships = [
   { size: "2", count: 3 },
   { size: "1", count: 4 }
 ];
-const cells = ["", ...letters];
+const cells = []; // ["", ...letters.map((label) => ({ label }))];
 const random = (max, min = 0) => min + Math.round(Math.random() * (max - min));
 const grid = [];
 let count = grid_size;
@@ -66,10 +67,18 @@ function position(ship) {
       //if the cells are clear -> draw the ship
       count = ship.size;
       while (count--) {
-        const txt = "x" + ship.size;
+        const data = { axis, size: parseInt(ship.size) };
+        if (axis === "x") {
+          if (ship.size !== 1 && count === ship.size - 1) data.edge = "left";
+          else if (ship.size !== 1 && count === 0) data.edge = "right";
+        } else {
+          if (ship.size !== 1 && count === ship.size - 1) data.edge = "top";
+          else if (ship.size !== 1 && count === 0) data.edge = "bottom";
+        }
+        // data.label = "x" + ship.size;
         axis === "y"
-          ? (grid[origin - count][p.x] = txt)
-          : (grid[p.y][origin - count] = txt);
+          ? (grid[origin - count][p.x] = data)
+          : (grid[p.y][origin - count] = data);
       }
     } else {
       //if not -> choose another point and start over
@@ -135,31 +144,61 @@ for (const ship of ships) {
 }
 
 for (let i = 0; i < grid_size; i++) {
-  cells.push(numbers[i]);
+  // cells.push({ label: numbers[i] });
   for (let j = 0; j < grid_size; j++) {
-    cells.push(grid[i][j]);
+    cells.push({ data: grid[i][j], row: i, col: j });
   }
 }
 
 const Board = () => {
   return (
-    <Container size={grid_size + 1}>
-      {cells.map((l, i) => {
-        return l === 0 ? (
-          <Cell key={i} />
-        ) : typeof l === "string" && l.slice(0, 1) === "x" ? (
-          <Sub key={i}>
-            <span>{l.slice(1)}</span>
-          </Sub>
-        ) : (
-          <Label key={i}>{l}</Label>
-        );
-      })}
-    </Container>
+    <>
+      <Box>
+        <Empty />
+        <Chars>
+          {letters.map((char) => (
+            <Label key={"n" + char}>{char}</Label>
+          ))}
+        </Chars>
+        <Nums>
+          {numbers.map((n) => (
+            <Label key={"n" + n}>{n}</Label>
+          ))}
+        </Nums>
+        <Container size={grid_size}>
+          {cells.map(({ data, row, col }) => {
+            return data === 0 ? (
+              <Cell key={`${row}${col}`} row={row} col={col} />
+            ) : (
+              <Sub
+                key={`${row}${col}`}
+                row={row}
+                col={col}
+                axis={data.axis}
+                edge={data.edge}
+                size={data.size}
+              />
+            );
+          })}
+        </Container>
+      </Box>
+    </>
   );
 };
 export default Board;
-
+const Box = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 10fr;
+  grid-template-rows: 1fr 10fr;
+`;
+const Empty = styled.div``;
+const Chars = styled.div`
+  display: flex;
+`;
+const Nums = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
 const Container = styled.div.attrs(({ size }) => ({
   style: {
     "--size": size,
@@ -169,25 +208,90 @@ const Container = styled.div.attrs(({ size }) => ({
 }))`
   width: var(--width) rem;
   height: var(--height) rem;
-  /* border: deeppink 1px solid; */
+  border: #00cc88 1px solid;
   display: grid;
   grid-template-columns: repeat(var(--size), 1fr);
 `;
-const Cell = styled.div`
+const bgMixin = ({ row, col }) => {
+  let bg;
+  if (row % 2 === 0) {
+    bg = col % 2 === 0 ? "#111f2f" : "#0f1d2b";
+  } else {
+    bg = col % 2 === 0 ? "#0f1d2b" : "#0c1824";
+  }
+  return {
+    style: {
+      "--bg": bg
+    }
+  };
+};
+const Cell = styled.div.attrs(bgMixin)`
   width: 3.5rem;
   height: 3.5rem;
-  border: lightgray 1px solid;
+  /* border: lightgray 1px solid; */
+  background: var(--bg);
 `;
-const Sub = styled.div`
+const Sub = styled.div.attrs((props) => {
+  const attr = bgMixin(props);
+  attr.style["--border-left-color"] = "mediumvioletred";
+  attr.style["--border-right-color"] = "mediumvioletred";
+  attr.style["--border-top-color"] = "mediumvioletred";
+  attr.style["--border-bottom-color"] = "mediumvioletred";
+  attr.style["--border-left-width"] = "1px";
+  attr.style["--border-right-width"] = "1px";
+  attr.style["--border-top-width"] = "1px";
+  attr.style["--border-bottom-width"] = "1px";
+
+  let { axis, edge, size } = props;
+  if (axis === "x" && size !== 1) {
+    if (edge === "left") {
+      attr.style["--border-right-color"] = "transparent";
+      attr.style["--border-right-width"] = 0;
+    } else if (edge === "right") {
+      attr.style["--border-left-color"] = "transparent";
+      attr.style["--border-left-width"] = 0;
+    } else {
+      attr.style["--border-right-color"] = "transparent";
+      attr.style["--border-right-width"] = 0;
+      attr.style["--border-left-color"] = "transparent";
+      attr.style["--border-left-width"] = 0;
+    }
+  } else if (axis === "y" && size !== 1) {
+    if (edge === "top") {
+      attr.style["--border-bottom-color"] = "transparent";
+      attr.style["--border-bottom-width"] = 0;
+    } else if (edge === "bottom") {
+      attr.style["--border-top-color"] = "transparent";
+      attr.style["--border-top-width"] = 0;
+    } else {
+      attr.style["--border-bottom-color"] = "transparent";
+      attr.style["--border-bottom-width"] = 0;
+      attr.style["--border-top-color"] = "transparent";
+      attr.style["--border-top-width"] = 0;
+    }
+  }
+  return attr;
+})`
   width: 3.5rem;
   height: 3.5rem;
-  border: mediumvioletred 1px solid;
-  background: pink;
+  border: mediumvioletred 2px solid;
+  border-top-color: var(--border-top-color);
+  border-bottom-color: var(--border-bottom-color);
+  border-right-color: var(--border-right-color);
+  border-left-color: var(--border-left-color);
+
+  border-top-width: var(--border-top-width);
+  border-bottom-width: var(--border-bottom-width);
+  border-right-width: var(--border-right-width);
+  border-left-width: var(--border-left-width);
+  /* border-radius:20%; */
+  /* background: pink; */
+  background: var(--bg);
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
-  :before,
+  /* :before,
   :after {
     content: "";
     position: absolute;
@@ -198,12 +302,12 @@ const Sub = styled.div`
   }
   :after {
     transform: rotate(-45deg);
-  }
+  } */
   span {
     position: absolute;
     z-index: 1;
     color: mediumvioletred;
-    background: white;
+    /* background: white; */
     border-radius: 50%;
     width: 2rem;
   }
@@ -211,6 +315,7 @@ const Sub = styled.div`
 const Label = styled.div`
   width: 3.5rem;
   height: 3.5rem;
+  color: #2f4d59;
   /* border: lime 1px solid; */
   display: flex;
   justify-content: center;
